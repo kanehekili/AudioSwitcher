@@ -6,7 +6,7 @@ Created on Dec 21, 2019
 import subprocess
 from subprocess import Popen
 import re
-class PulseAudioTools():
+class PulseAudioControl():
     PA_CTL="/usr/bin/pactl"
     #PA_CMD="/usr/bin/pacmd"
     ISPROFILE = re.compile('Profiles:')
@@ -16,8 +16,8 @@ class PulseAudioTools():
     KEY_LOCAL="analog"
     KEY_EXTERN="hdmi"
     def __init__(self):
-         #pactl set-card-profile 0 output:analog-stereo
-         #pactl set-card-profile 0 output:hdmi-stereo
+        #pactl set-card-profile 0 output:analog-stereo
+        #pactl set-card-profile 0 output:hdmi-stereo
         self.profilList=[]
         self.activeProfile=None
         self.lastError=None
@@ -98,7 +98,44 @@ class PulseAudioTools():
         
         print("Local %s  Extern: %s"%(self.getPrimaryLocalProfile(),self.getPrimaryExternalProfile()))
         print ("is Local:",self.isLocalProfile() )
-                    
+
+
+class PaCmd():
+    PA_SINKS=["/usr/bin/pacmd","list-sinks"]
+    PA_IN=["/usr/bin/pacmd","list-sink-inputs"]
+    def __init__(self):
+        sinks=[]
+        self.lastError=None
+        
+    def readSinks(self):
+        result = Popen(self.PA_SINKS,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate()
+        if len(result[1])>0:
+            self.lastError=result[1]
+            return
+        cardData = result[0].decode("utf-8")
+        self._parseSinks(cardData)
+        self.lastError=None       
+                  
+    def _parseSinks(self,data):
+        for line in data.splitlines():
+            tabcnt = line.count('\t')
+            print(line,">>",tabcnt)              
+
+    def readInputs(self):           
+        result = Popen(self.PA_IN,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate()
+        if len(result[1])>0:
+            self.lastError=result[1]
+            return
+        cardData = result[0].decode("utf-8")
+        self._parseInputSinks(cardData)
+        self.lastError=None       
+                 
+    def _parseInputSinks(self,data):
+        for line in data.splitlines():
+            tabcnt = line.count('\t')
+            print(line,">>",tabcnt) 
+            print(line)                  
+                
 def parseTest():
     ISPROFILE = re.compile('profiles:')
     ACTIVE_PROFILE=re.compile('Active Profile: output:([A-z:-]+)+')
@@ -118,13 +155,33 @@ def parseTest():
     for item in m.groups():
         print("1:%s"%(item))    
 
-
-if __name__ == '__main__':
-    test = PulseAudioTools()
+def testControl():
+    test = PulseAudioControl()
+    #Error if no external profile available!
     test.printState()
-    if test.isLocalProfile():
-        test.switchProfile(test.getPrimaryExternalProfile())
+    extProfile=test.getPrimaryExternalProfile()
+    if test.isLocalProfile() and extProfile:
+        test.switchProfile(extProfile)
     else:
         test.switchProfile(test.getPrimaryLocalProfile())
-    #parseTest()
+    parseTest()
+
+def regTst():
+    t1 = "   index: 1"
+    t2 = "/tstate: RUNNING"
+    t3="sink: 4 <alsa_output.pci-0000_00_1b.0.analog-stereo>"
+    t4="properties:" #then key value pairs
+    #list-sinks..
+    t5="  * index: 4"
+    t6="/tname: <alsa_output.pci-0000_00_1b.0.analog-stereo>"
+    t7="/tstate: IDLE"
+     
+def testCmd():
+    x=PaCmd()
+    x.readInputs()
+    x.readSinks()
+     
+if __name__ == '__main__':
+    #testControl()
+    testCmd()
     pass

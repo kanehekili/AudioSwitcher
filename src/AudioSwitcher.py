@@ -4,9 +4,9 @@ Created on Dec 21, 2019
 
 @author: matze
 '''
-from PyQt5.QtWidgets import (QApplication, QMessageBox)
+from PyQt5.QtWidgets import QApplication, QMessageBox
 import sys
-from PulseTools import PulseAudioTools
+from PulseTools import PulseAudioControl
 import locale
 
 VERSION="@xxxx@"
@@ -31,7 +31,7 @@ def _t(s):
 def run():
     title = "Audio Switcher"
     app = QApplication(sys.argv)
-    tools = PulseAudioTools()
+    tools = PulseAudioControl()
     isLocal= tools.isLocalProfile()
     external = tools.getPrimaryExternalProfile()
     if external:
